@@ -31,7 +31,7 @@ def GenerateDataPoint(dim):
                 pointOutsideHypershpere+=1
 
     print ("Dimension: " + str(dim),str(float(pointInsideHypersphere)/float(points) * 100)+"%","inside hemisphere")
-    print ("Dimension: " + str(dim), str(float(pointsInsideHyperSphericalShell) / float(points) * 100) + "%", "inside HyperShpericalShell")
+    print ("Dimension: " + str(dim), str(float(pointsInsideHyperSphericalShell) / float(pointInsideHypersphere) * 100) + "%", "inside HyperShpericalShell")
 
 
 
