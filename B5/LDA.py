@@ -7,7 +7,10 @@ from numpy.linalg import eig
 from numpy import cov
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from sklearn.lda import LDA
+from sklearn.decomposition import PCA
 
+#4096 features
 
 class_label=0
 
@@ -20,7 +23,6 @@ def LoadData():
     label_set=list(set(labels))
     classes_list=[]
     faces = faces - np.tile(faces.mean(axis=0), [faces.shape[0], 1])
-
     for i in range(len(label_set)):
         indices=[]
         for j in range(len(labels)):
@@ -33,35 +35,79 @@ def LoadData():
 
 
 def LinearDiscriminantAnalysis(classes_list,faces,n_components):
-
     Sb=0
     Sw = 0
     Mean = 0
+    #Each class has 10 samples and 4096 features
+
+    c=0
+    classMean=[]
+
+
+
     for i in classes_list:
+        classMean.append(np.mean(i,axis=0))
         Mean += np.mean(i, axis=0)
+
 
     for i in classes_list:  # First i is np array of 0 class
 
-        ClassMean = np.mean(i, axis=0)
+        Sb+=np.multiply((len(i)),np.outer((classMean[c]-Mean),(classMean[c]-Mean)))
 
-        Sb += np.multiply.outer(ClassMean - Mean, ClassMean - Mean)
+        c+=1
 
-        Sw += cov(i, rowvar=False)
+    #The within-class scatter matrix
+    Sw = np.zeros(Sb.shape)
+    sw=0
+    c=0
+    column=0
+    for i in classes_list:  #i is np array of zero class
 
-    Sb = Sb / len(classes_list)
-    # print Sb.shape
-    # print Sw.shape
+        Sw+=np.cov(i.T)
 
-    EigenMatrix = np.matmul(np.linalg.inv(Sw), Sb)
-    D, V = eig(EigenMatrix)
-    # print w1.shape
+
+    #S_{w}^{-1}S_{b}w = \lambda w
+
+
+
+
+    EigenMatrix = np.dot(np.linalg.inv(Sw), Sb)
+    D, V = np.linalg.eigh(EigenMatrix)
+
+
     V = V[:, np.argsort(D)]  # Eigen vector with maximum variance is at last
-    # Transofrm data to 2 dimensions
+    D = sorted(D, reverse=True)
 
-    X_rot = np.matmul(faces, V)
-    transformed = X_rot[:, :n_components]  # 2 dimension
-    # print transformed.shape
-    return transformed
+
+    W=np.column_stack((V[:,-1],V[:,-2])) #(4096,2)  Combine 2 highest eigen vectors
+    X = faces - np.tile(faces.mean(axis=0), [faces.shape[0], 1])
+    Transformed = np.matmul(X,W) #(400,4096)(4096,2)  #Project the data onto 2 highest eigenvectors
+
+
+    # Analyze Projection matrix
+    # Ranking of eigen values gives importance of each feature
+
+
+
+
+    return Transformed  #(400,2)
+
+
+
+def ScikitLDA():
+
+    clf=LDA(n_components=2)
+
+    dataset = fetch_olivetti_faces()
+    faces = dataset.data
+    labels = dataset.target
+
+    Transformed = clf.fit(faces,labels).transform(faces)
+    print clf.coef_.shape
+    return Transformed
+
+
+
 
 def Visualization(transformed):
 
@@ -85,9 +131,6 @@ def Visualization(transformed):
 
 
 
-#Analyze Projection matrix
-
-
 
 
 
@@ -98,8 +141,8 @@ def Main():
     n_components=2
     classes_list,faces,labels=LoadData()
     transformed=LinearDiscriminantAnalysis(classes_list,faces,n_components)
+    transformed=ScikitLDA()
     Visualization(transformed)
-
 
 
 Main()
